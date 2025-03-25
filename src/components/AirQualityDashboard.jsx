@@ -166,7 +166,7 @@ const AirQualityDashboard = () => {
             nrOfLevels={3} 
             colors={['#def3f8', '#4fc3f7', '#0288d1']} 
           />
-          <p className="text-center font-bold">{sensorData.pressure}%</p>
+          <p className="text-center font-bold">{sensorData.pressure}</p>
         </div>
 
         <div className="md:col-span-2 bg-white shadow-md rounded-lg p-4">
