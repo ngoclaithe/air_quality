@@ -29,6 +29,13 @@ const AirQualityDashboard = () => {
 
   const [mqttStatus, setMqttStatus] = useState('Disconnected');
 
+  // Sanitize and validate incoming data
+  const sanitizeValue = (value) => {
+    // Check if value is a valid number
+    const sanitized = Number(value);
+    return !isNaN(sanitized) && isFinite(sanitized) ? sanitized : 0;
+  };
+
   useEffect(() => {
     const clientId = 'airquality_' + Math.random().toString(16).substr(2, 8);
     const client = mqtt.connect('wss://9bf62adad86549a3a08bd830a5735042.s1.eu.hivemq.cloud:8884/mqtt', {
@@ -53,10 +60,53 @@ const AirQualityDashboard = () => {
     client.on('message', (topic, message) => {
       if (topic === 'data') {
         try {
-          const parsedData = JSON.parse(message.toString());
-          updateSensorData(parsedData);
+          // Attempt to parse the message
+          let parsedData = {};
+          try {
+            parsedData = JSON.parse(message.toString());
+          } catch (parseError) {
+            console.error('Error parsing JSON:', parseError);
+            // If JSON parsing fails, try to handle potential malformed data
+            try {
+              // Replace 'nan' with '0' and try parsing again
+              const cleanedMessage = message.toString().replace(/nan/gi, '0');
+              parsedData = JSON.parse(cleanedMessage);
+            } catch (cleanError) {
+              console.error('Error parsing cleaned message:', cleanError);
+              // If still fails, set to default zero values
+              parsedData = {
+                temperature: 0,
+                humidity: 0,
+                pressure: 0,
+                pm1_0: 0,
+                pm2_5: 0,
+                pm10: 0
+              };
+            }
+          }
+
+          // Sanitize all incoming values
+          const sanitizedData = {
+            temperature: sanitizeValue(parsedData.temperature),
+            humidity: sanitizeValue(parsedData.humidity),
+            pressure: sanitizeValue(parsedData.pressure),
+            pm1_0: sanitizeValue(parsedData.pm1_0),
+            pm2_5: sanitizeValue(parsedData.pm2_5),
+            pm10: sanitizeValue(parsedData.pm10)
+          };
+
+          updateSensorData(sanitizedData);
         } catch (error) {
-          console.error('Error parsing message:', error);
+          console.error('Unhandled error processing message:', error);
+          // Fallback to zero values
+          updateSensorData({
+            temperature: 0,
+            humidity: 0,
+            pressure: 0,
+            pm1_0: 0,
+            pm2_5: 0,
+            pm10: 0
+          });
         }
       }
     });
