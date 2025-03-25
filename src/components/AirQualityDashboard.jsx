@@ -162,7 +162,7 @@ const AirQualityDashboard = () => {
           <h2 className="text-xl font-semibold mb-2 text-center">Pressure</h2>
           <GaugeChart 
             id="pressure-gauge"
-            percent={sensorData.pressure/100} 
+            percent={sensorData.pressure / 10000} 
             nrOfLevels={3} 
             colors={['#def3f8', '#4fc3f7', '#0288d1']} 
           />
