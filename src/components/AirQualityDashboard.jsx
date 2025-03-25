@@ -14,7 +14,7 @@ import {
 const AirQualityDashboard = () => {
   const [sensorData, setSensorData] = useState({
     temperature: 0,
-    humidity: 0,
+    pressure: 0,
     pressure: 0,
     pm1_0: 0,
     pm2_5: 0,
@@ -23,15 +23,13 @@ const AirQualityDashboard = () => {
 
   const [historicalData, setHistoricalData] = useState({
     temperature: [],
-    humidity: [],
+    pressure: [],
     pm2_5: []
   });
 
   const [mqttStatus, setMqttStatus] = useState('Disconnected');
 
-  // Sanitize and validate incoming data
   const sanitizeValue = (value) => {
-    // Check if value is a valid number
     const sanitized = Number(value);
     return !isNaN(sanitized) && isFinite(sanitized) ? sanitized : 0;
   };
@@ -60,23 +58,20 @@ const AirQualityDashboard = () => {
     client.on('message', (topic, message) => {
       if (topic === 'data') {
         try {
-          // Attempt to parse the message
           let parsedData = {};
           try {
             parsedData = JSON.parse(message.toString());
           } catch (parseError) {
             console.error('Error parsing JSON:', parseError);
-            // If JSON parsing fails, try to handle potential malformed data
             try {
-              // Replace 'nan' with '0' and try parsing again
               const cleanedMessage = message.toString().replace(/nan/gi, '0');
               parsedData = JSON.parse(cleanedMessage);
             } catch (cleanError) {
               console.error('Error parsing cleaned message:', cleanError);
-              // If still fails, set to default zero values
+
               parsedData = {
                 temperature: 0,
-                humidity: 0,
+                pressure: 0,
                 pressure: 0,
                 pm1_0: 0,
                 pm2_5: 0,
@@ -85,10 +80,9 @@ const AirQualityDashboard = () => {
             }
           }
 
-          // Sanitize all incoming values
           const sanitizedData = {
             temperature: sanitizeValue(parsedData.temperature),
-            humidity: sanitizeValue(parsedData.humidity),
+            pressure: sanitizeValue(parsedData.pressure),
             pressure: sanitizeValue(parsedData.pressure),
             pm1_0: sanitizeValue(parsedData.pm1_0),
             pm2_5: sanitizeValue(parsedData.pm2_5),
@@ -98,10 +92,9 @@ const AirQualityDashboard = () => {
           updateSensorData(sanitizedData);
         } catch (error) {
           console.error('Unhandled error processing message:', error);
-          // Fallback to zero values
           updateSensorData({
             temperature: 0,
-            humidity: 0,
+            pressure: 0,
             pressure: 0,
             pm1_0: 0,
             pm2_5: 0,
@@ -129,7 +122,7 @@ const AirQualityDashboard = () => {
 
     setHistoricalData(prev => ({
       temperature: [...prev.temperature, { value: newData.temperature, time: new Date().toLocaleTimeString() }].slice(-10),
-      humidity: [...prev.humidity, { value: newData.humidity, time: new Date().toLocaleTimeString() }].slice(-10),
+      pressure: [...prev.pressure, { value: newData.pressure, time: new Date().toLocaleTimeString() }].slice(-10),
       pm2_5: [...prev.pm2_5, { value: newData.pm2_5, time: new Date().toLocaleTimeString() }].slice(-10)
     }));
   };
@@ -145,7 +138,6 @@ const AirQualityDashboard = () => {
       <h1 className="text-3xl font-bold mb-6 text-center">Air Quality Monitoring</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* MQTT Connection Status */}
         <div className="bg-white shadow-md rounded-lg p-4">
           <h2 className="text-xl font-semibold mb-2">MQTT Connection</h2>
           <span className={`px-3 py-1 rounded text-white ${
@@ -155,7 +147,6 @@ const AirQualityDashboard = () => {
           </span>
         </div>
 
-        {/* Temperature Gauge */}
         <div className="bg-white shadow-md rounded-lg p-4">
           <h2 className="text-xl font-semibold mb-2 text-center">Temperature</h2>
           <GaugeChart 
@@ -167,19 +158,17 @@ const AirQualityDashboard = () => {
           <p className="text-center font-bold">{sensorData.temperature}°C</p>
         </div>
 
-        {/* Humidity Gauge */}
         <div className="bg-white shadow-md rounded-lg p-4">
-          <h2 className="text-xl font-semibold mb-2 text-center">Humidity</h2>
+          <h2 className="text-xl font-semibold mb-2 text-center">Pressure</h2>
           <GaugeChart 
-            id="humidity-gauge"
-            percent={sensorData.humidity / 100} 
+            id="pressure-gauge"
+            percent={sensorData.pressure} 
             nrOfLevels={3} 
             colors={['#def3f8', '#4fc3f7', '#0288d1']} 
           />
-          <p className="text-center font-bold">{sensorData.humidity}%</p>
+          <p className="text-center font-bold">{sensorData.pressure}%</p>
         </div>
 
-        {/* PM2.5 History Chart */}
         <div className="md:col-span-2 bg-white shadow-md rounded-lg p-4">
           <h2 className="text-xl font-semibold mb-2">Particulate Matter (PM2.5) History</h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -193,7 +182,6 @@ const AirQualityDashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Particulate Matter Status */}
         <div className="bg-white shadow-md rounded-lg p-4">
           <h2 className="text-xl font-semibold mb-2">Particulate Matter Status</h2>
           <table className="w-full">
