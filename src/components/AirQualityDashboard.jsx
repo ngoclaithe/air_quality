@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import mqtt from 'mqtt';
 import GaugeChart from 'react-gauge-chart';
 import { 
-  BarChart, 
-  Bar, 
+  LineChart, 
+  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -14,7 +14,6 @@ import {
 const AirQualityDashboard = () => {
   const [sensorData, setSensorData] = useState({
     temperature: 0,
-    pressure: 0,
     pressure: 0,
     pm1_0: 0,
     pm2_5: 0,
@@ -72,7 +71,6 @@ const AirQualityDashboard = () => {
               parsedData = {
                 temperature: 0,
                 pressure: 0,
-                pressure: 0,
                 pm1_0: 0,
                 pm2_5: 0,
                 pm10: 0
@@ -82,7 +80,6 @@ const AirQualityDashboard = () => {
 
           const sanitizedData = {
             temperature: sanitizeValue(parsedData.temperature),
-            pressure: sanitizeValue(parsedData.pressure),
             pressure: sanitizeValue(parsedData.pressure),
             pm1_0: sanitizeValue(parsedData.pm1_0),
             pm2_5: sanitizeValue(parsedData.pm2_5),
@@ -94,7 +91,6 @@ const AirQualityDashboard = () => {
           console.error('Unhandled error processing message:', error);
           updateSensorData({
             temperature: 0,
-            pressure: 0,
             pressure: 0,
             pm1_0: 0,
             pm2_5: 0,
@@ -172,13 +168,13 @@ const AirQualityDashboard = () => {
         <div className="md:col-span-2 bg-white shadow-md rounded-lg p-4">
           <h2 className="text-xl font-semibold mb-2">Particulate Matter (PM2.5) History</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={historicalData.pm2_5}>
+            <LineChart data={historicalData.pm2_5}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="time" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="value" fill="#8884d8" />
-            </BarChart>
+              <Line type="monotone" dataKey="value" stroke="#8884d8" strokeWidth={2} />
+            </LineChart>
           </ResponsiveContainer>
         </div>
 

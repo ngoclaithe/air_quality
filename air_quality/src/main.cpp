@@ -8,6 +8,9 @@
 #include <PubSubClient.h>
 #include <SD.h>
 #include <Arduino.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+
 #define WIFI_SSID     "tang2"
 #define WIFI_PASSWORD "12345678"
 
@@ -20,6 +23,9 @@ HardwareSerial pmsSerial(2);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Adafruit_BMP280 bmp;
 uint8_t buffer[32];
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000);
 
 unsigned long currentTime;
 
@@ -83,6 +89,9 @@ void setup() {
     lcd.print("WiFi OK");
     delay(1000);
 
+    timeClient.begin();
+    timeClient.update();
+
     espClient.setInsecure();  
     mqttClient.setServer(mqtt_server, mqtt_port);
     connectMQTT();
@@ -94,6 +103,11 @@ void setup() {
     }else
     {
         Serial.println("Ket noi SD thanh cong");
+        File dataFile = SD.open("/pws_data.csv", FILE_APPEND);
+        if (dataFile.size() == 0) {
+            dataFile.println("Hour,Minute,Second,Day,Month,Year,Pressure,Humidity,PM1.0,PM2.5,PM10");
+        }
+        dataFile.close();
     }
     
     lcd.clear();
@@ -132,6 +146,10 @@ void displayEnvironmentalData(float temperature, float pressure) {
 }
 
 void loop() {
+    timeClient.update();
+    time_t epochTime = timeClient.getEpochTime();
+    struct tm *ptm = gmtime(&epochTime);
+
     if (!mqttClient.connected()) {
       connectMQTT();
     }
@@ -139,6 +157,7 @@ void loop() {
     
     float temperature = bmp.readTemperature();
     float pressure = bmp.readPressure() / 100.0F;
+    float humidity = 0.0; 
     
     Serial.print("Nhiet do: "); Serial.print(temperature);
     Serial.print(" C, Ap suat: "); Serial.print(pressure);
@@ -187,19 +206,19 @@ void loop() {
       Serial.println("Failed to publish payload");
     }
     
-    File dataFile = SD.open("/pws_data.txt", FILE_APPEND);
+    File dataFile = SD.open("/pws_data.csv", FILE_APPEND);
     if (dataFile) {
-        dataFile.print(millis());
-        dataFile.print(",");
+        dataFile.print(ptm->tm_hour); dataFile.print(",");
+        dataFile.print(ptm->tm_min); dataFile.print(",");
+        dataFile.print(ptm->tm_sec); dataFile.print(",");
+        dataFile.print(ptm->tm_mday); dataFile.print(",");
+        dataFile.print(ptm->tm_mon + 1); dataFile.print(",");  
+        dataFile.print(ptm->tm_year + 1900); dataFile.print(",");  
         
-        dataFile.print(temperature);
-        dataFile.print(",");
-        dataFile.print(pressure);
-        dataFile.print(",");
-        dataFile.print(pm1_0);
-        dataFile.print(",");
-        dataFile.print(pm2_5);
-        dataFile.print(",");
+        dataFile.print(pressure); dataFile.print(",");
+        dataFile.print(humidity); dataFile.print(",");
+        dataFile.print(pm1_0); dataFile.print(",");
+        dataFile.print(pm2_5); dataFile.print(",");
         dataFile.println(pm10);
         
         dataFile.close();
